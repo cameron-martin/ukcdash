@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDisciplineCounts, getMaxOverTime, getSuccessByGrade } from "./chart-data";
+import { getAverageSessionsToSendByGrade, getDisciplineCounts, getMaxOverTime, getSuccessByGrade } from "./chart-data";
 import type { Discipline } from "./grades";
 import type { LogbookRow, StyleBucket } from "./logbook-parser";
 
@@ -135,6 +135,65 @@ describe("getSuccessByGrade", () => {
 
     expect(getSuccessByGrade(rows, "Sport")).toEqual([
       { grade: "7a", rank: 21, attempts: 1, successes: 1, rate: 100, label: "1/1" },
+    ]);
+  });
+});
+
+describe("getAverageSessionsToSendByGrade", () => {
+  it("averages sessions up to the first send for sent climbs by grade", () => {
+    const rows: LogbookRow[] = [
+      row({ name: "Project one", crag: "A", grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
+      row({ name: "Project one", crag: "A", grade: "7a", rank: 21, bucket: "redpointSent" }),
+      row({ name: "Project two", crag: "A", grade: "7a", rank: 21, bucket: "onsight" }),
+      row({ name: "Another grade", crag: "A", grade: "7b", rank: 23, bucket: "flash" }),
+    ];
+
+    expect(getAverageSessionsToSendByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, climbs: 2, totalSessions: 3, averageSessions: 1.5, label: "3/2" },
+      { grade: "7b", rank: 23, climbs: 1, totalSessions: 1, averageSessions: 1, label: "1/1" },
+    ]);
+  });
+
+  it("ignores climbs that were never sent", () => {
+    const rows: LogbookRow[] = [
+      row({ name: "Project", grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
+      row({ name: "Sent", grade: "7a", rank: 21, bucket: "onsight" }),
+    ];
+
+    expect(getAverageSessionsToSendByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, climbs: 1, totalSessions: 1, averageSessions: 1, label: "1/1" },
+    ]);
+  });
+
+  it("does not count repeat logs after the first send as extra sessions to send", () => {
+    const rows: LogbookRow[] = [
+      row({
+        name: "Project",
+        grade: "7a",
+        rank: 21,
+        bucket: "failed",
+        isSuccessfulSend: false,
+        date: dated(2026, 1, 1),
+      }),
+      row({ name: "Project", grade: "7a", rank: 21, bucket: "redpointSent", date: dated(2026, 1, 2) }),
+      row({ name: "Project", grade: "7a", rank: 21, bucket: "repeat", date: dated(2026, 1, 3) }),
+    ];
+
+    expect(getAverageSessionsToSendByGrade(rows, "Sport")[0]).toMatchObject({
+      climbs: 1,
+      totalSessions: 2,
+      averageSessions: 2,
+    });
+  });
+
+  it("formats trad averages by adjectival grade", () => {
+    const rows: LogbookRow[] = [
+      row({ name: "Trad one", grade: "E1 5a", rank: 6, type: "Trad", bucket: "onsight" }),
+      row({ name: "Trad two", grade: "E1 5b", rank: 6, type: "Trad", bucket: "flash" }),
+    ];
+
+    expect(getAverageSessionsToSendByGrade(rows, "Trad")).toEqual([
+      { grade: "E1", rank: 6, climbs: 2, totalSessions: 2, averageSessions: 1, label: "2/2" },
     ]);
   });
 });

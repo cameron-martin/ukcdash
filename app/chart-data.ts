@@ -22,6 +22,15 @@ export type DisciplineCountPoint = {
   count: number;
 };
 
+export type AverageSessionsByGradePoint = {
+  grade: string;
+  rank: number;
+  climbs: number;
+  totalSessions: number;
+  averageSessions: number;
+  label: string;
+};
+
 export function formatDate(date: Date | null) {
   if (!date) return "Unknown";
   return new Intl.DateTimeFormat("en-GB", {
@@ -71,6 +80,50 @@ export function getDisciplineCounts(rows: LogbookRow[], disciplines: Discipline[
       count: counts.get(discipline) ?? 0,
     }))
     .filter((point) => point.count > 0);
+}
+
+export function getAverageSessionsToSendByGrade(rows: LogbookRow[], type: Discipline): AverageSessionsByGradePoint[] {
+  const climbs = new Map<string, Array<LogbookRow & { inputIndex: number }>>();
+
+  rows.forEach((row, inputIndex) => {
+    if (row.type !== type || row.rank === null) return;
+
+    const key = [row.type, row.grade.toLowerCase(), row.crag.toLowerCase(), row.name.toLowerCase()].join("\u001f");
+    climbs.set(key, [...(climbs.get(key) ?? []), { ...row, inputIndex }]);
+  });
+
+  const gradeMap = new Map<string, { grade: string; rank: number; climbs: number; totalSessions: number }>();
+
+  for (const sessions of climbs.values()) {
+    const orderedSessions = [...sessions].sort((a, b) => {
+      const dateA = a.date?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const dateB = b.date?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      return dateA - dateB || a.inputIndex - b.inputIndex;
+    });
+    const firstSendIndex = orderedSessions.findIndex((row) => row.isSuccessfulSend);
+    if (firstSendIndex < 0) continue;
+
+    const sentRow = orderedSessions[firstSendIndex];
+    const grade = formatGradeForDiscipline(type, sentRow.grade);
+    const current = gradeMap.get(grade) ?? {
+      grade,
+      rank: sentRow.rank ?? 0,
+      climbs: 0,
+      totalSessions: 0,
+    };
+
+    current.climbs += 1;
+    current.totalSessions += firstSendIndex + 1;
+    gradeMap.set(grade, current);
+  }
+
+  return [...gradeMap.values()]
+    .sort((a, b) => a.rank - b.rank)
+    .map((item) => ({
+      ...item,
+      averageSessions: Math.round((item.totalSessions / item.climbs) * 10) / 10,
+      label: `${item.totalSessions}/${item.climbs}`,
+    }));
 }
 
 function isOnsightAttempt(row: LogbookRow) {

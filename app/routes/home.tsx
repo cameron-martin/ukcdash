@@ -2,9 +2,11 @@ import type { Route } from "./+types/home";
 import { useMemo, useState } from "react";
 import {
   formatDate,
+  getAverageSessionsToSendByGrade,
   getDisciplineCounts,
   getMaxOverTime,
   getSuccessByGrade,
+  type AverageSessionsByGradePoint,
   type DisciplineCountPoint,
   type MaxOverTimePoint,
   type SuccessByGradePoint,
@@ -211,6 +213,20 @@ export default function Home() {
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold text-slate-950">Average sessions to send by grade</h2>
+              <div className="mt-4 grid gap-6 lg:grid-cols-3">
+                {disciplines.map((discipline) => (
+                  <ChartPanel key={discipline} title={discipline}>
+                    <AverageSessionsChart
+                      data={getAverageSessionsToSendByGrade(rows, discipline)}
+                      color={disciplineColors[discipline]}
+                    />
+                  </ChartPanel>
+                ))}
+              </div>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold text-slate-950">Max grade over time</h2>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">
                 {disciplines.map((discipline) => (
@@ -311,6 +327,36 @@ function SuccessRateChart({
           labelFormatter={(label) => `Grade ${label}`}
         />
         <Bar dataKey="rate" fill={color} radius={[3, 3, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function AverageSessionsChart({
+  data,
+  color,
+}: {
+  data: AverageSessionsByGradePoint[];
+  color: string;
+}) {
+  if (data.length === 0) {
+    return <EmptyChartText>No sent climbs with parseable grades found.</EmptyChartText>;
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 32 }}>
+        <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="grade" angle={-35} textAnchor="end" interval={0} tick={{ fill: "#475569", fontSize: 12 }} />
+        <YAxis allowDecimals tick={{ fill: "#475569", fontSize: 12 }} />
+        <Tooltip
+          formatter={(value, name, item) => [
+            `${Number(value).toLocaleString("en-GB", { maximumFractionDigits: 1 })} sessions (${item.payload.label})`,
+            "Average",
+          ]}
+          labelFormatter={(label) => `Grade ${label}`}
+        />
+        <Bar dataKey="averageSessions" fill={color} radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
