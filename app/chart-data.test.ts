@@ -1,0 +1,155 @@
+import { describe, expect, it } from "vitest";
+import { getDisciplineCounts, getMaxOverTime, getSuccessByGrade } from "./chart-data";
+import type { Discipline } from "./grades";
+import type { LogbookRow, StyleBucket } from "./logbook-parser";
+
+function row(overrides: Partial<LogbookRow> & Pick<LogbookRow, "grade" | "rank">): LogbookRow {
+  return {
+    name: overrides.name ?? overrides.grade,
+    grade: overrides.grade,
+    style: overrides.style ?? "Lead O/S",
+    date: overrides.date ?? new Date(Date.UTC(2026, 0, 1)),
+    dateLabel: overrides.dateLabel ?? "01/Jan/26",
+    crag: overrides.crag ?? "Crag",
+    pitches: overrides.pitches ?? 1,
+    type: overrides.type ?? "Sport",
+    rank: overrides.rank,
+    bucket: overrides.bucket ?? "onsight",
+    isEligibleAttempt: overrides.isEligibleAttempt ?? true,
+    isSuccessfulSend: overrides.isSuccessfulSend ?? true,
+  };
+}
+
+function dated(year: number, month: number, day: number) {
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+describe("getMaxOverTime", () => {
+  it("keeps only the greatest grade when multiple progression grades happen on the same date", () => {
+    const data = getMaxOverTime(
+      [
+        row({ grade: "6a", rank: 15, date: dated(2023, 6, 4) }),
+        row({ grade: "6b", rank: 17, date: dated(2023, 9, 23) }),
+        row({ grade: "6b+", rank: 18, date: dated(2023, 9, 23) }),
+        row({ grade: "7a", rank: 21, date: dated(2024, 5, 16) }),
+      ],
+      "Sport",
+    );
+
+    expect(data).toEqual([
+      { date: dated(2023, 6, 4).getTime(), dateLabel: "04 Jun 2023", rank: 15, grade: "6a" },
+      { date: dated(2023, 9, 23).getTime(), dateLabel: "23 Sept 2023", rank: 18, grade: "6b+" },
+      { date: dated(2024, 5, 16).getTime(), dateLabel: "16 May 2024", rank: 21, grade: "7a" },
+    ]);
+  });
+
+  it("uses numeric timestamps for x values and formatted date labels only for display", () => {
+    const date = dated(2026, 8, 23);
+    const data = getMaxOverTime([row({ grade: "7a", rank: 21, date })], "Sport");
+
+    expect(data[0].date).toBe(date.getTime());
+    expect(data[0].dateLabel).toBe("23 Aug 2026");
+  });
+
+  it("excludes failed high-grade attempts from progression", () => {
+    const data = getMaxOverTime(
+      [
+        row({ name: "Sent", grade: "f6C", rank: 19, type: "Bouldering", bucket: "redpointSent" }),
+        row({
+          name: "DNF",
+          grade: "f7B",
+          rank: 23,
+          type: "Bouldering",
+          bucket: "failed",
+          isSuccessfulSend: false,
+        }),
+      ],
+      "Bouldering",
+    );
+
+    expect(data).toHaveLength(1);
+    expect(data[0]).toMatchObject({ grade: "f6C", rank: 19 });
+  });
+
+  it("formats trad progression grades as adjectival grades", () => {
+    const data = getMaxOverTime(
+      [
+        row({ grade: "VS 4c", rank: 4, type: "Trad" }),
+        row({ grade: "E1 5a", rank: 6, type: "Trad", date: dated(2026, 8, 19) }),
+      ],
+      "Trad",
+    );
+
+    expect(data.map((point) => point.grade)).toEqual(["VS", "E1"]);
+  });
+
+  it("excludes seconded trad climbs from max-grade progression", () => {
+    const data = getMaxOverTime(
+      [
+        row({ grade: "HVS 5a", rank: 5, type: "Trad", style: "Lead O/S" }),
+        row({
+          grade: "E2 5b",
+          rank: 7,
+          type: "Trad",
+          style: "2nd O/S",
+          isSuccessfulSend: true,
+          date: dated(2026, 8, 19),
+        }),
+      ],
+      "Trad",
+    );
+
+    expect(data.map((point) => point.grade)).toEqual(["HVS"]);
+  });
+});
+
+describe("getSuccessByGrade", () => {
+  it("calculates onsight success rate by grade from first-try attempts", () => {
+    const rows: LogbookRow[] = [
+      row({ grade: "7a", rank: 21, bucket: "onsight" }),
+      row({ grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
+      row({ grade: "7b", rank: 23, bucket: "failed", isSuccessfulSend: false }),
+    ];
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, attempts: 2, successes: 1, rate: 50, label: "1/2" },
+      { grade: "7b", rank: 23, attempts: 1, successes: 0, rate: 0, label: "0/1" },
+    ]);
+  });
+
+  it("excludes flash, redpoint, and repeat rows from first-try onsight attempts", () => {
+    const buckets: StyleBucket[] = ["flash", "redpointSent", "repeat"];
+    const rows = buckets.map((bucket, index) =>
+      row({ grade: "7a", rank: 21, bucket, name: `${bucket}-${index}`, isSuccessfulSend: true }),
+    );
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([]);
+  });
+
+  it("ignores rows from other disciplines and ineligible attempts", () => {
+    const rows = [
+      row({ grade: "7a", rank: 21, type: "Sport", bucket: "onsight" }),
+      row({ grade: "7a", rank: 21, type: "Sport", bucket: "onsight", isEligibleAttempt: false }),
+      row({ grade: "f6A", rank: 15, type: "Bouldering" as Discipline, bucket: "onsight" }),
+    ];
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, attempts: 1, successes: 1, rate: 100, label: "1/1" },
+    ]);
+  });
+});
+
+describe("getDisciplineCounts", () => {
+  it("returns positive discipline counts in the requested order", () => {
+    const rows = [
+      row({ grade: "7a", rank: 21, type: "Sport" }),
+      row({ grade: "VS 4c", rank: 4, type: "Trad" }),
+      row({ grade: "HVS 5a", rank: 5, type: "Trad" }),
+    ];
+
+    expect(getDisciplineCounts(rows, ["Sport", "Trad", "Bouldering"])).toEqual([
+      { discipline: "Sport", count: 1 },
+      { discipline: "Trad", count: 2 },
+    ]);
+  });
+});

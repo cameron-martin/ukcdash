@@ -7,9 +7,13 @@
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-stone-50;
 
   @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+    color-scheme: light;
   }
+}
+
+* {
+  box-sizing: border-box;
 }
