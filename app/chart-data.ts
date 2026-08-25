@@ -31,6 +31,13 @@ export type AverageSessionsByGradePoint = {
   label: string;
 };
 
+export type GradeDistributionPoint = {
+  grade: string;
+  rank: number;
+  climbs: number;
+  label: string;
+};
+
 export function formatDate(date: Date | null) {
   if (!date) return "Unknown";
   return new Intl.DateTimeFormat("en-GB", {
@@ -123,6 +130,31 @@ export function getAverageSessionsToSendByGrade(rows: LogbookRow[], type: Discip
       ...item,
       averageSessions: Math.round((item.totalSessions / item.climbs) * 10) / 10,
       label: `${item.totalSessions}/${item.climbs}`,
+    }));
+}
+
+export function getGradeDistribution(rows: LogbookRow[], type: Discipline): GradeDistributionPoint[] {
+  const gradeMap = new Map<string, { grade: string; rank: number; climbs: number }>();
+
+  for (const row of rows) {
+    if (row.type !== type || row.rank === null || !row.isSuccessfulSend) continue;
+
+    const grade = formatGradeForDiscipline(type, row.grade);
+    const current = gradeMap.get(grade) ?? {
+      grade,
+      rank: row.rank,
+      climbs: 0,
+    };
+
+    current.climbs += 1;
+    gradeMap.set(grade, current);
+  }
+
+  return [...gradeMap.values()]
+    .sort((a, b) => a.rank - b.rank)
+    .map((item) => ({
+      ...item,
+      label: `${item.climbs} ${item.climbs === 1 ? "climb" : "climbs"}`,
     }));
 }
 

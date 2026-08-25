@@ -4,10 +4,12 @@ import {
   formatDate,
   getAverageSessionsToSendByGrade,
   getDisciplineCounts,
+  getGradeDistribution,
   getMaxOverTime,
   getSuccessByGrade,
   type AverageSessionsByGradePoint,
   type DisciplineCountPoint,
+  type GradeDistributionPoint,
   type MaxOverTimePoint,
   type SuccessByGradePoint,
 } from "../chart-data";
@@ -202,6 +204,20 @@ export default function Home() {
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold text-slate-950">Grade distribution of successful ascents</h2>
+              <div className="mt-4 grid gap-6 lg:grid-cols-3">
+                {disciplines.map((discipline) => (
+                  <ChartPanel key={discipline} title={discipline}>
+                    <GradeDistributionChart
+                      data={getGradeDistribution(rows, discipline)}
+                      color={disciplineColors[discipline]}
+                    />
+                  </ChartPanel>
+                ))}
+              </div>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold text-slate-950">Onsight success rate by grade</h2>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">
                 {disciplines.map((discipline) => (
@@ -302,6 +318,33 @@ function ChartPanel({ title, children }: { title: string; children: React.ReactN
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       <div className="mt-4 h-72">{children}</div>
     </div>
+  );
+}
+
+function GradeDistributionChart({
+  data,
+  color,
+}: {
+  data: GradeDistributionPoint[];
+  color: string;
+}) {
+  if (data.length === 0) {
+    return <EmptyChartText>No successful climbs with parseable grades found.</EmptyChartText>;
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 32 }}>
+        <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="grade" angle={-35} textAnchor="end" interval={0} tick={{ fill: "#475569", fontSize: 12 }} />
+        <YAxis allowDecimals={false} tick={{ fill: "#475569", fontSize: 12 }} />
+        <Tooltip
+          formatter={(_, __, item) => [item.payload.label, "Successful ascents"]}
+          labelFormatter={(label) => `Grade ${label}`}
+        />
+        <Bar dataKey="climbs" fill={color} radius={[3, 3, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 

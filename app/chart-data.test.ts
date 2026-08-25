@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getAverageSessionsToSendByGrade, getDisciplineCounts, getMaxOverTime, getSuccessByGrade } from "./chart-data";
+import {
+  getAverageSessionsToSendByGrade,
+  getDisciplineCounts,
+  getGradeDistribution,
+  getMaxOverTime,
+  getSuccessByGrade,
+} from "./chart-data";
 import type { Discipline } from "./grades";
 import type { LogbookRow, StyleBucket } from "./logbook-parser";
 
@@ -194,6 +200,45 @@ describe("getAverageSessionsToSendByGrade", () => {
 
     expect(getAverageSessionsToSendByGrade(rows, "Trad")).toEqual([
       { grade: "E1", rank: 6, climbs: 2, totalSessions: 2, averageSessions: 1, label: "2/2" },
+    ]);
+  });
+});
+
+describe("getGradeDistribution", () => {
+  it("counts successfully ascended climbs by grade for the requested discipline", () => {
+    const rows: LogbookRow[] = [
+      row({ grade: "6b", rank: 17, bucket: "onsight" }),
+      row({ grade: "6b", rank: 17, bucket: "redpointSent" }),
+      row({ grade: "6c", rank: 19, bucket: "flash" }),
+      row({ grade: "6c", rank: 19, bucket: "failed", isSuccessfulSend: false }),
+      row({ grade: "f6A", rank: 15, type: "Bouldering", bucket: "onsight" }),
+    ];
+
+    expect(getGradeDistribution(rows, "Sport")).toEqual([
+      { grade: "6b", rank: 17, climbs: 2, label: "2 climbs" },
+      { grade: "6c", rank: 19, climbs: 1, label: "1 climb" },
+    ]);
+  });
+
+  it("ignores rows without parseable grades", () => {
+    const rows = [
+      row({ grade: "7a", rank: 21 }),
+      row({ grade: "Project grade", rank: null }),
+    ];
+
+    expect(getGradeDistribution(rows, "Sport")).toEqual([{ grade: "7a", rank: 21, climbs: 1, label: "1 climb" }]);
+  });
+
+  it("groups trad climbs by adjectival grade", () => {
+    const rows: LogbookRow[] = [
+      row({ grade: "E1 5a", rank: 6, type: "Trad", bucket: "onsight" }),
+      row({ grade: "E1 5b", rank: 6, type: "Trad", bucket: "redpointSent" }),
+      row({ grade: "HVS 5a", rank: 5, type: "Trad", bucket: "flash" }),
+    ];
+
+    expect(getGradeDistribution(rows, "Trad")).toEqual([
+      { grade: "HVS", rank: 5, climbs: 1, label: "1 climb" },
+      { grade: "E1", rank: 6, climbs: 2, label: "2 climbs" },
     ]);
   });
 });
