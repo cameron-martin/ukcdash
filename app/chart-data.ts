@@ -206,9 +206,9 @@ export function getMaxOverTime(rows: LogbookRow[], type: Discipline): MaxOverTim
 }
 
 function isEligibleForMaxOverTime(row: LogbookRow, type: Discipline) {
-  if (type !== "Trad") {
+  if (type === "Bouldering") {
     return true;
   }
 
-  return !/\b(2nd|tr)\b/i.test(row.style);
+  return /\blead\b/i.test(row.style) && !/\b(2nd|tr)\b/i.test(row.style);
 }

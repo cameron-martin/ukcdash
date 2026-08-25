@@ -107,6 +107,25 @@ describe("getMaxOverTime", () => {
 
     expect(data.map((point) => point.grade)).toEqual(["HVS"]);
   });
+
+  it("excludes non-lead sport climbs from max-grade progression", () => {
+    const data = getMaxOverTime(
+      [
+        row({ grade: "6c", rank: 19, type: "Sport", style: "Lead O/S" }),
+        row({
+          grade: "7a",
+          rank: 21,
+          type: "Sport",
+          style: "TR O/S",
+          isSuccessfulSend: true,
+          date: dated(2026, 8, 19),
+        }),
+      ],
+      "Sport",
+    );
+
+    expect(data.map((point) => point.grade)).toEqual(["6c"]);
+  });
 });
 
 describe("getSuccessByGrade", () => {
