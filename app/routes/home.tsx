@@ -174,6 +174,11 @@ export default function Home() {
             <section>
               <div className="border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-950">Max grade by discipline</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                  This table shows the hardest successful ascent recorded for each discipline and style bucket. It separates
+                  onsights, flashes, and redpoints or sends so a one-try result is not mixed with a worked climb. Trad grades
+                  are compared by adjectival grade only, so technical sub-grades do not change the maximum shown here.
+                </p>
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-sm">
                     <thead className="border-b border-slate-200 text-xs uppercase tracking-[0.08em] text-slate-500">
@@ -205,6 +210,11 @@ export default function Home() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-950">Grade distribution of successful ascents</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                These charts count successful ascents at each grade, split by Sport, Trad, and Bouldering. Taller bars mean
+                more completed climbs at that grade, which helps show where most of your volume sits and whether your logbook
+                is concentrated at easier grades, spread evenly, or weighted toward your current limit.
+              </p>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">
                 {disciplines.map((discipline) => (
                   <ChartPanel key={discipline} title={discipline}>
@@ -219,6 +229,13 @@ export default function Home() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-950">Onsight success rate by grade</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                These charts estimate how often first-try attempts turn into onsights at each grade. The percentage is
+                onsights divided by eligible first-try attempts, where worked or failed attempts are counted against the rate
+                and flashes, redpoints, repeats, seconds, top-ropes, and other styles are excluded. A high bar means that grade
+                has usually been comfortable to onsight; a lower bar suggests it has been closer to your limit or has fewer
+                successful first-try outcomes.
+              </p>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">
                 {disciplines.map((discipline) => (
                   <ChartPanel key={discipline} title={discipline}>
@@ -230,6 +247,12 @@ export default function Home() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-950">Average sessions to send by grade</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                These charts show how many logged sessions it has taken, on average, to record the first successful send of a
+                climb at each grade. Climbs are matched by discipline, grade, crag, and route name, then ordered by date so the
+                first send can be found. Higher bars usually indicate grades or individual climbs that needed more projecting,
+                while bars close to one session indicate quick sends.
+              </p>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">
                 {disciplines.map((discipline) => (
                   <ChartPanel key={discipline} title={discipline}>
@@ -244,6 +267,12 @@ export default function Home() {
 
             <section>
               <h2 className="text-lg font-semibold text-slate-950">Max grade over time</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                These progression charts track the highest successful grade you had logged by each date. The line only moves
+                when a new personal best appears for that discipline, and if multiple improvements happen on the same day the
+                chart keeps the hardest one. For Sport and Trad, only led climbs are included, so seconded and top-rope entries
+                do not inflate the progression line.
+              </p>
               <div className="mt-4 grid gap-6 lg:grid-cols-3">
                 {disciplines.map((discipline) => (
                   <ChartPanel key={discipline} title={discipline}>
@@ -282,6 +311,9 @@ function DisciplinePieCard({ data }: { data: DisciplineCountPoint[] }) {
   return (
     <div className="border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Disciplines</p>
+      <p className="mt-2 text-sm leading-5 text-slate-600">
+        This split shows how your imported logbook entries are divided across climbing disciplines.
+      </p>
       <div className="mt-3 grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4">
         <div className="h-24">
           <ResponsiveContainer width="100%" height="100%">
