@@ -43,10 +43,10 @@ import {
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "UKC Logbook Dashboard" },
+    { title: "UKC Logbook Analyser" },
     {
       name: "description",
-      content: "Client-side UKC CSV logbook analyser",
+      content: "Analyse your UKC logbook export in the browser.",
     },
   ];
 }
@@ -179,10 +179,11 @@ export default function Home() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.08em] text-teal-700">UKC logbook analyser</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-normal text-slate-950 md:text-4xl">
-              Climbing dashboard from a local CSV
+              Understand your climbing logbook
             </h1>
             <p className="mt-3 max-w-2xl text-base text-slate-600">
-              Upload a UKC logbook export to calculate grades, success rates, and progression entirely in your browser.
+              Upload your UKC logbook export to see grade trends, success rates, progression, and repeat ascents. Your file
+              is parsed locally in this browser.
             </p>
           </div>
 
@@ -200,9 +201,10 @@ export default function Home() {
         {!parseResult && (
           <section className="grid gap-4 border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
             <div>
-              <h2 className="text-xl font-semibold text-slate-950">Start with a UKC logbook CSV</h2>
+              <h2 className="text-xl font-semibold text-slate-950">Export your logbook from UKC</h2>
               <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
-                Required columns are Name, Grade, Style, Date, Crag, Pitches, and Type. The file stays on this device.
+                In UKC, open your logbook, use the export option to download it as a CSV file, then upload it here. Nothing is
+                sent anywhere; the dashboard is built from the file on this device.
               </p>
             </div>
           </section>
