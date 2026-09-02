@@ -2,12 +2,10 @@ import type { Route } from "./+types/home";
 import { useMemo, useState } from "react";
 import {
   formatDate,
-  getAverageSessionsToSendByGrade,
   getDisciplineCounts,
   getGradeDistribution,
   getMaxOverTime,
   getSuccessByGrade,
-  type AverageSessionsByGradePoint,
   type DisciplineCountPoint,
   type GradeDistributionPoint,
   type MaxOverTimePoint,
@@ -322,26 +320,6 @@ export default function Home() {
                 </section>
 
                 <section>
-                  <h2 className="text-lg font-semibold text-slate-950">Average sessions to send by grade</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                    These charts show how many logged sessions it has taken, on average, to record the first successful send of a
-                    climb at each grade. Climbs are matched by discipline, grade, crag, and route name, then ordered by date so
-                    the first send can be found. Higher bars usually indicate grades or individual climbs that needed more
-                    projecting, while bars close to one session indicate quick sends.
-                  </p>
-                  <div className="mt-4 grid gap-6 lg:grid-cols-3">
-                    {disciplines.map((discipline) => (
-                      <ChartPanel key={discipline} title={discipline}>
-                        <AverageSessionsChart
-                          data={getAverageSessionsToSendByGrade(filteredRows, discipline)}
-                          color={disciplineColors[discipline]}
-                        />
-                      </ChartPanel>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
                   <h2 className="text-lg font-semibold text-slate-950">Max grade over time</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                     These progression charts track the highest successful grade you had logged by each date. The line only moves
@@ -480,36 +458,6 @@ function SuccessRateChart({
           labelFormatter={(label) => `Grade ${label}`}
         />
         <Bar dataKey="rate" fill={color} radius={[3, 3, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-function AverageSessionsChart({
-  data,
-  color,
-}: {
-  data: AverageSessionsByGradePoint[];
-  color: string;
-}) {
-  if (data.length === 0) {
-    return <EmptyChartText>No sent climbs with parseable grades found.</EmptyChartText>;
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 32 }}>
-        <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="grade" angle={-35} textAnchor="end" interval={0} tick={{ fill: "#475569", fontSize: 12 }} />
-        <YAxis allowDecimals tick={{ fill: "#475569", fontSize: 12 }} />
-        <Tooltip
-          formatter={(value, name, item) => [
-            `${Number(value).toLocaleString("en-GB", { maximumFractionDigits: 1 })} sessions (${item.payload.label})`,
-            "Average",
-          ]}
-          labelFormatter={(label) => `Grade ${label}`}
-        />
-        <Bar dataKey="averageSessions" fill={color} radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
