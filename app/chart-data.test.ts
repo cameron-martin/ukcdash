@@ -4,6 +4,7 @@ import {
   getDisciplineCounts,
   getGradeDistribution,
   getMaxOverTime,
+  getMostClimbedRoutes,
   getSuccessByGrade,
 } from "./chart-data";
 import type { Discipline } from "./grades";
@@ -259,6 +260,72 @@ describe("getGradeDistribution", () => {
       { grade: "HVS", rank: 5, climbs: 1, label: "1 climb" },
       { grade: "E1", rank: 6, climbs: 2, label: "2 climbs" },
     ]);
+  });
+});
+
+describe("getMostClimbedRoutes", () => {
+  it("groups successful ascents by climb and sorts by ascent count", () => {
+    const rows: LogbookRow[] = [
+      row({ name: "Often repeated", crag: "A", grade: "7a", rank: 21, bucket: "redpointSent", date: dated(2025, 12, 1) }),
+      row({ name: "Often repeated", crag: "A", grade: "7a", rank: 21, bucket: "repeat", date: dated(2026, 1, 1) }),
+      row({ name: "Often repeated", crag: "A", grade: "7a", rank: 21, bucket: "repeat", date: dated(2026, 2, 1) }),
+      row({ name: "Less repeated", crag: "B", grade: "7b", rank: 23, bucket: "repeat", date: dated(2026, 3, 1) }),
+      row({ name: "Original ascent", crag: "A", grade: "7a", rank: 21, bucket: "onsight", date: dated(2026, 4, 1) }),
+    ];
+
+    expect(getMostClimbedRoutes(rows)).toEqual([
+      {
+        name: "Often repeated",
+        crag: "A",
+        discipline: "Sport",
+        grade: "7a",
+        rank: 21,
+        ascents: 3,
+        lastAscentDate: dated(2026, 2, 1).getTime(),
+        lastAscentDateLabel: "01 Feb 2026",
+      },
+      {
+        name: "Less repeated",
+        crag: "B",
+        discipline: "Sport",
+        grade: "7b",
+        rank: 23,
+        ascents: 1,
+        lastAscentDate: dated(2026, 3, 1).getTime(),
+        lastAscentDateLabel: "01 Mar 2026",
+      },
+      {
+        name: "Original ascent",
+        crag: "A",
+        discipline: "Sport",
+        grade: "7a",
+        rank: 21,
+        ascents: 1,
+        lastAscentDate: dated(2026, 4, 1).getTime(),
+        lastAscentDateLabel: "01 Apr 2026",
+      },
+    ]);
+  });
+
+  it("formats trad grades by adjectival grade and applies the requested limit", () => {
+    const rows: LogbookRow[] = [
+      row({ name: "Trad repeat", grade: "E1 5a", rank: 6, type: "Trad", bucket: "repeat" }),
+      row({ name: "Sport repeat", grade: "7a", rank: 21, type: "Sport", bucket: "repeat" }),
+    ];
+
+    expect(getMostClimbedRoutes(rows).map((point) => point.grade)).toEqual(["7a", "E1"]);
+    expect(getMostClimbedRoutes(rows, 1).map((point) => point.name)).toEqual(["Sport repeat"]);
+  });
+
+  it("ignores failed ascents and unranked grades", () => {
+    const rows: LogbookRow[] = [
+      row({ name: "Repeat", grade: "7a", rank: 21, bucket: "repeat" }),
+      row({ name: "Onsight", grade: "7a", rank: 21, bucket: "onsight" }),
+      row({ name: "Failed repeat", grade: "7a", rank: 21, bucket: "repeat", isSuccessfulSend: false }),
+      row({ name: "Unranked", grade: "Unknown", rank: null, bucket: "repeat" }),
+    ];
+
+    expect(getMostClimbedRoutes(rows).map((point) => point.name)).toEqual(["Onsight", "Repeat"]);
   });
 });
 

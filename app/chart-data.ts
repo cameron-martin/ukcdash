@@ -38,6 +38,17 @@ export type GradeDistributionPoint = {
   label: string;
 };
 
+export type ClimbAscentPoint = {
+  name: string;
+  crag: string;
+  discipline: Discipline;
+  grade: string;
+  rank: number;
+  ascents: number;
+  lastAscentDate: number | null;
+  lastAscentDateLabel: string;
+};
+
 export function formatDate(date: Date | null) {
   if (!date) return "Unknown";
   return new Intl.DateTimeFormat("en-GB", {
@@ -156,6 +167,50 @@ export function getGradeDistribution(rows: LogbookRow[], type: Discipline): Grad
       ...item,
       label: `${item.climbs} ${item.climbs === 1 ? "climb" : "climbs"}`,
     }));
+}
+
+export function getMostClimbedRoutes(rows: LogbookRow[], limit = 10): ClimbAscentPoint[] {
+  const climbs = new Map<string, ClimbAscentPoint>();
+
+  for (const row of rows) {
+    if (row.rank === null || !row.isSuccessfulSend) continue;
+
+    const key = [row.type, row.grade.toLowerCase(), row.crag.toLowerCase(), row.name.toLowerCase()].join("\u001f");
+    const current = climbs.get(key) ?? {
+      name: row.name,
+      crag: row.crag,
+      discipline: row.type,
+      grade: formatGradeForDiscipline(row.type, row.grade),
+      rank: row.rank,
+      ascents: 0,
+      lastAscentDate: null,
+      lastAscentDateLabel: "Unknown",
+    };
+    const timestamp = row.date?.getTime() ?? null;
+
+    current.ascents += 1;
+    if (timestamp !== null && (current.lastAscentDate === null || timestamp > current.lastAscentDate)) {
+      current.lastAscentDate = timestamp;
+      current.lastAscentDateLabel = formatDate(row.date);
+    }
+
+    climbs.set(key, current);
+  }
+
+  return [...climbs.values()]
+    .sort((a, b) => {
+      const lastAscentA = a.lastAscentDate ?? 0;
+      const lastAscentB = b.lastAscentDate ?? 0;
+
+      return (
+        b.ascents - a.ascents ||
+        b.rank - a.rank ||
+        lastAscentB - lastAscentA ||
+        a.name.localeCompare(b.name) ||
+        a.crag.localeCompare(b.crag)
+      );
+    })
+    .slice(0, limit);
 }
 
 function isOnsightAttempt(row: LogbookRow) {

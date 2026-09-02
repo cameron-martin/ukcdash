@@ -5,7 +5,9 @@ import {
   getDisciplineCounts,
   getGradeDistribution,
   getMaxOverTime,
+  getMostClimbedRoutes,
   getSuccessByGrade,
+  type ClimbAscentPoint,
   type DisciplineCountPoint,
   type GradeDistributionPoint,
   type MaxOverTimePoint,
@@ -145,6 +147,7 @@ export default function Home() {
   const filteredRows = useMemo(() => filterRowsByTime(rows, timeFilter), [rows, timeFilter]);
   const summary = useMemo(() => summarizeRows(filteredRows), [filteredRows]);
   const disciplineCounts = useMemo(() => getDisciplineCounts(filteredRows, disciplines), [filteredRows]);
+  const mostClimbedRoutes = useMemo(() => getMostClimbedRoutes(filteredRows), [filteredRows]);
   const isTimeFilterChanged = timeFilter.from !== defaultTimeFilter.from || timeFilter.to !== defaultTimeFilter.to;
 
   async function handleFileUpload(file: File | undefined) {
@@ -283,6 +286,18 @@ export default function Home() {
                 </section>
 
                 <section>
+                  <div className="border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 className="text-lg font-semibold text-slate-950">Most climbed routes</h2>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                      This table lists the climbs with the most logged successful ascents in the selected date range. Ascents are
+                      grouped by discipline, grade, crag, and route name, so the initial send and later repeats are counted
+                      together.
+                    </p>
+                    <MostClimbedRoutesTable data={mostClimbedRoutes} />
+                  </div>
+                </section>
+
+                <section>
                   <h2 className="text-lg font-semibold text-slate-950">Grade distribution of successful ascents</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                     These charts count successful ascents at each grade, split by Sport, Trad, and Bouldering. Taller bars mean
@@ -405,6 +420,41 @@ function ChartPanel({ title, children }: { title: string; children: React.ReactN
     <div className="min-h-[340px] border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       <div className="mt-4 h-72">{children}</div>
+    </div>
+  );
+}
+
+function MostClimbedRoutesTable({ data }: { data: ClimbAscentPoint[] }) {
+  if (data.length === 0) {
+    return <p className="mt-4 text-sm text-slate-500">No successful ascents found in this date range.</p>;
+  }
+
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <table className="w-full min-w-[720px] text-left text-sm">
+        <thead className="border-b border-slate-200 text-xs uppercase tracking-[0.08em] text-slate-500">
+          <tr>
+            <th className="py-3 pr-4">Climb</th>
+            <th className="py-3 pr-4">Crag</th>
+            <th className="py-3 pr-4">Discipline</th>
+            <th className="py-3 pr-4">Grade</th>
+            <th className="py-3 pr-4 text-right">Ascents</th>
+            <th className="py-3 pr-4">Last ascent</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {data.map((climb) => (
+            <tr key={`${climb.discipline}-${climb.grade}-${climb.crag}-${climb.name}`}>
+              <th className="py-3 pr-4 font-semibold text-slate-900">{climb.name}</th>
+              <td className="py-3 pr-4 text-slate-700">{climb.crag || "-"}</td>
+              <td className="py-3 pr-4 text-slate-700">{climb.discipline}</td>
+              <td className="py-3 pr-4 font-mono text-slate-700">{climb.grade}</td>
+              <td className="py-3 pr-4 text-right font-mono font-semibold text-slate-950">{climb.ascents}</td>
+              <td className="py-3 pr-4 text-slate-700">{climb.lastAscentDateLabel}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
