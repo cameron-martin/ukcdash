@@ -321,9 +321,10 @@ export default function Home() {
                 <section>
                   <h2 className="text-lg font-semibold text-slate-950">Onsight success rate by grade</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                    These charts estimate how often first-try attempts turn into onsights at each grade. The percentage is
-                    onsights divided by eligible first-try attempts, where worked or failed attempts are counted against the rate
-                    and flashes, redpoints, repeats, seconds, top-ropes, and other styles are excluded. A high bar means that
+                    These charts estimate how often routes turn into onsights at each grade. The percentage is routes onsighted
+                    on the first eligible attempt divided by distinct routes attempted, so logging the same failed route more than
+                    once does not lower the rate again. Flashes, redpoints, repeats, seconds, top-ropes, and other styles are
+                    excluded. A high bar means that
                     grade has usually been comfortable to onsight; a lower bar suggests it has been closer to your limit or has
                     fewer successful first-try outcomes.
                   </p>

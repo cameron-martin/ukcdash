@@ -4,7 +4,7 @@ import type { LogbookRow } from "./logbook-parser";
 export type SuccessByGradePoint = {
   grade: string;
   rank: number;
-  attempts: number;
+  routes: number;
   successes: number;
   rate: number;
   label: string;
@@ -60,28 +60,41 @@ export function formatDate(date: Date | null) {
 }
 
 export function getSuccessByGrade(rows: LogbookRow[], type: Discipline): SuccessByGradePoint[] {
-  const gradeMap = new Map<string, { grade: string; rank: number; attempts: number; successes: number }>();
+  const routes = new Map<string, Array<LogbookRow & { inputIndex: number }>>();
 
-  for (const row of rows) {
-    if (row.type !== type || row.rank === null || !isOnsightAttempt(row)) continue;
-    const current = gradeMap.get(row.grade) ?? {
-      grade: row.grade,
-      rank: row.rank,
-      attempts: 0,
+  rows.forEach((row, inputIndex) => {
+    if (row.type !== type || row.rank === null || !isOnsightAttempt(row)) return;
+
+    const key = [row.type, row.crag.toLowerCase(), row.name.toLowerCase()].join("\u001f");
+    routes.set(key, [...(routes.get(key) ?? []), { ...row, inputIndex }]);
+  });
+
+  const gradeMap = new Map<string, { grade: string; rank: number; routes: number; successes: number }>();
+
+  for (const attempts of routes.values()) {
+    const firstAttempt = [...attempts].sort((a, b) => {
+      const dateA = a.date?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const dateB = b.date?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      return dateA - dateB || a.inputIndex - b.inputIndex;
+    })[0];
+    const current = gradeMap.get(firstAttempt.grade) ?? {
+      grade: firstAttempt.grade,
+      rank: firstAttempt.rank ?? 0,
+      routes: 0,
       successes: 0,
     };
 
-    current.attempts += 1;
-    if (row.bucket === "onsight") current.successes += 1;
-    gradeMap.set(row.grade, current);
+    current.routes += 1;
+    if (firstAttempt.bucket === "onsight") current.successes += 1;
+    gradeMap.set(firstAttempt.grade, current);
   }
 
   return [...gradeMap.values()]
     .sort((a, b) => a.rank - b.rank)
     .map((item) => ({
       ...item,
-      rate: Math.round((item.successes / item.attempts) * 100),
-      label: `${item.successes}/${item.attempts}`,
+      rate: Math.round((item.successes / item.routes) * 100),
+      label: `${item.successes}/${item.routes}`,
     }));
 }
 

@@ -132,14 +132,14 @@ describe("getMaxOverTime", () => {
 describe("getSuccessByGrade", () => {
   it("calculates onsight success rate by grade from first-try attempts", () => {
     const rows: LogbookRow[] = [
-      row({ grade: "7a", rank: 21, bucket: "onsight" }),
-      row({ grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
-      row({ grade: "7b", rank: 23, bucket: "failed", isSuccessfulSend: false }),
+      row({ name: "Onsighted route", grade: "7a", rank: 21, bucket: "onsight" }),
+      row({ name: "Failed 7a route", grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
+      row({ name: "Failed 7b route", grade: "7b", rank: 23, bucket: "failed", isSuccessfulSend: false }),
     ];
 
     expect(getSuccessByGrade(rows, "Sport")).toEqual([
-      { grade: "7a", rank: 21, attempts: 2, successes: 1, rate: 50, label: "1/2" },
-      { grade: "7b", rank: 23, attempts: 1, successes: 0, rate: 0, label: "0/1" },
+      { grade: "7a", rank: 21, routes: 2, successes: 1, rate: 50, label: "1/2" },
+      { grade: "7b", rank: 23, routes: 1, successes: 0, rate: 0, label: "0/1" },
     ]);
   });
 
@@ -160,7 +160,43 @@ describe("getSuccessByGrade", () => {
     ];
 
     expect(getSuccessByGrade(rows, "Sport")).toEqual([
-      { grade: "7a", rank: 21, attempts: 1, successes: 1, rate: 100, label: "1/1" },
+      { grade: "7a", rank: 21, routes: 1, successes: 1, rate: 100, label: "1/1" },
+    ]);
+  });
+
+  it("counts multiple failed attempts on the same route once", () => {
+    const rows = [
+      row({ name: "Route A", crag: "Crag", grade: "7a", rank: 21, bucket: "onsight" }),
+      row({ name: "Route B", crag: "Crag", grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
+      row({ name: "Route B", crag: "Crag", grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
+    ];
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, routes: 2, successes: 1, rate: 50, label: "1/2" },
+    ]);
+  });
+
+  it("uses the earliest eligible outcome when a route has multiple logs", () => {
+    const rows = [
+      row({
+        name: "Route",
+        grade: "7a",
+        rank: 21,
+        bucket: "onsight",
+        date: dated(2026, 1, 2),
+      }),
+      row({
+        name: "Route",
+        grade: "7a",
+        rank: 21,
+        bucket: "failed",
+        isSuccessfulSend: false,
+        date: dated(2026, 1, 1),
+      }),
+    ];
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, routes: 1, successes: 0, rate: 0, label: "0/1" },
     ]);
   });
 });
