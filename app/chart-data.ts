@@ -63,7 +63,7 @@ export function getSuccessByGrade(rows: LogbookRow[], type: Discipline): Success
   const routes = new Map<string, Array<LogbookRow & { inputIndex: number }>>();
 
   rows.forEach((row, inputIndex) => {
-    if (row.type !== type || row.rank === null || !isOnsightAttempt(row)) return;
+    if (row.type !== type || row.rank === null || !isFirstGoAttempt(row)) return;
 
     const key = [row.type, row.crag.toLowerCase(), row.name.toLowerCase()].join("\u001f");
     routes.set(key, [...(routes.get(key) ?? []), { ...row, inputIndex }]);
@@ -85,7 +85,7 @@ export function getSuccessByGrade(rows: LogbookRow[], type: Discipline): Success
     };
 
     current.routes += 1;
-    if (firstAttempt.bucket === "onsight") current.successes += 1;
+    if (firstAttempt.bucket === "onsight" || firstAttempt.bucket === "flash") current.successes += 1;
     gradeMap.set(firstAttempt.grade, current);
   }
 
@@ -226,8 +226,8 @@ export function getMostClimbedRoutes(rows: LogbookRow[], limit = 10): ClimbAscen
     .slice(0, limit);
 }
 
-function isOnsightAttempt(row: LogbookRow) {
-  return row.isEligibleAttempt && (row.bucket === "onsight" || row.bucket === "failed");
+function isFirstGoAttempt(row: LogbookRow) {
+  return row.isEligibleAttempt && (row.bucket === "onsight" || row.bucket === "flash" || row.bucket === "failed");
 }
 
 export function getMaxOverTime(rows: LogbookRow[], type: Discipline): MaxOverTimePoint[] {

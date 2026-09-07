@@ -130,21 +130,22 @@ describe("getMaxOverTime", () => {
 });
 
 describe("getSuccessByGrade", () => {
-  it("calculates onsight success rate by grade from first-try attempts", () => {
+  it("calculates onsight and flash success rate by grade from first-go attempts", () => {
     const rows: LogbookRow[] = [
       row({ name: "Onsighted route", grade: "7a", rank: 21, bucket: "onsight" }),
+      row({ name: "Flashed route", grade: "7a", rank: 21, bucket: "flash" }),
       row({ name: "Failed 7a route", grade: "7a", rank: 21, bucket: "failed", isSuccessfulSend: false }),
       row({ name: "Failed 7b route", grade: "7b", rank: 23, bucket: "failed", isSuccessfulSend: false }),
     ];
 
     expect(getSuccessByGrade(rows, "Sport")).toEqual([
-      { grade: "7a", rank: 21, routes: 2, successes: 1, rate: 50, label: "1/2" },
+      { grade: "7a", rank: 21, routes: 3, successes: 2, rate: 67, label: "2/3" },
       { grade: "7b", rank: 23, routes: 1, successes: 0, rate: 0, label: "0/1" },
     ]);
   });
 
-  it("excludes flash, redpoint, and repeat rows from first-try onsight attempts", () => {
-    const buckets: StyleBucket[] = ["flash", "redpointSent", "repeat"];
+  it("excludes redpoint and repeat rows from first-go attempts", () => {
+    const buckets: StyleBucket[] = ["redpointSent", "repeat"];
     const rows = buckets.map((bucket, index) =>
       row({ grade: "7a", rank: 21, bucket, name: `${bucket}-${index}`, isSuccessfulSend: true }),
     );

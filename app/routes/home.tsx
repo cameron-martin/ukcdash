@@ -319,14 +319,14 @@ export default function Home() {
                 </section>
 
                 <section>
-                  <h2 className="text-lg font-semibold text-slate-950">Onsight success rate by grade</h2>
+                  <h2 className="text-lg font-semibold text-slate-950">Onsight / flash success rate by grade</h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                    These charts estimate how often routes turn into onsights at each grade. The percentage is routes onsighted
-                    on the first eligible attempt divided by distinct routes attempted, so logging the same failed route more than
-                    once does not lower the rate again. Flashes, redpoints, repeats, seconds, top-ropes, and other styles are
-                    excluded. A high bar means that
-                    grade has usually been comfortable to onsight; a lower bar suggests it has been closer to your limit or has
-                    fewer successful first-try outcomes.
+                    These charts estimate how often first-go attempts succeed at each grade. Both onsights and flashes count as
+                    successes because a failed log does not show which style was attempted. The percentage is successful
+                    first-go ascents divided by distinct routes attempted, so logging the same failed route more than once does
+                    not lower the rate again. Redpoints, repeats, seconds, top-ropes, and other styles are excluded. A high bar
+                    means that grade has usually been comfortable on a first attempt; a lower bar suggests it has been closer to
+                    your limit or has fewer successful first-go outcomes.
                   </p>
                   <div className="mt-4 grid gap-6 lg:grid-cols-3">
                     {disciplines.map((discipline) => (
@@ -507,7 +507,7 @@ function SuccessRateChart({
         <XAxis dataKey="grade" angle={-35} textAnchor="end" interval={0} tick={{ fill: "#475569", fontSize: 12 }} />
         <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} tick={{ fill: "#475569", fontSize: 12 }} />
         <Tooltip
-          formatter={(value, name, item) => [`${value}% (${item.payload.label})`, "Onsight rate"]}
+          formatter={(value, name, item) => [`${value}% (${item.payload.label})`, "Onsight / flash rate"]}
           labelFormatter={(label) => `Grade ${label}`}
         />
         <Bar dataKey="rate" fill={color} radius={[3, 3, 0, 0]} />
