@@ -1,5 +1,5 @@
 import type { Route } from "./+types/home";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent, type DragEvent } from "react";
 import {
   formatDate,
   getDisciplineCounts,
@@ -140,6 +140,7 @@ export default function Home() {
   const [isReading, setIsReading] = useState(false);
   const [fileName, setFileName] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(emptyTimeFilter);
+  const [dragDepth, setDragDepth] = useState(0);
 
   const rows = parseResult?.rows ?? [];
   const dateBounds = useMemo(() => getDateBounds(rows), [rows]);
@@ -149,9 +150,10 @@ export default function Home() {
   const disciplineCounts = useMemo(() => getDisciplineCounts(filteredRows, disciplines), [filteredRows]);
   const mostClimbedRoutes = useMemo(() => getMostClimbedRoutes(filteredRows), [filteredRows]);
   const isTimeFilterChanged = timeFilter.from !== defaultTimeFilter.from || timeFilter.to !== defaultTimeFilter.to;
+  const isDraggingFile = dragDepth > 0;
 
   async function handleFileUpload(file: File | undefined) {
-    if (!file) return;
+    if (!file || isReading) return;
 
     setIsReading(true);
     setFileName(file.name);
@@ -172,8 +174,56 @@ export default function Home() {
     }
   }
 
+  function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
+    void handleFileUpload(event.target.files?.[0]);
+    event.target.value = "";
+  }
+
+  function handlePageDragEnter(event: DragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+
+    event.preventDefault();
+    setDragDepth((depth) => depth + 1);
+  }
+
+  function handlePageDragOver(event: DragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handlePageDragLeave(event: DragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+
+    event.preventDefault();
+    setDragDepth((depth) => Math.max(0, depth - 1));
+  }
+
+  function handlePageDrop(event: DragEvent<HTMLElement>) {
+    if (!hasDraggedFiles(event)) return;
+
+    event.preventDefault();
+    setDragDepth(0);
+    void handleFileUpload(event.dataTransfer.files[0]);
+  }
+
   return (
-    <main className="min-h-screen bg-stone-50 text-slate-950">
+    <main
+      className="min-h-screen bg-stone-50 text-slate-950"
+      onDragEnter={handlePageDragEnter}
+      onDragOver={handlePageDragOver}
+      onDragLeave={handlePageDragLeave}
+      onDrop={handlePageDrop}
+    >
+      {isDraggingFile && (
+        <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center border-4 border-dashed border-teal-600 bg-teal-950/15 p-6 backdrop-blur-[1px]">
+          <div className="border border-teal-200 bg-white px-6 py-5 text-center shadow-lg">
+            <p className="text-lg font-semibold text-slate-950">Drop your UKC CSV to import it</p>
+            <p className="mt-1 text-sm text-slate-600">The file will be parsed locally in this browser.</p>
+          </div>
+        </div>
+      )}
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 border-b border-slate-200 pb-6 md:flex-row md:items-end md:justify-between">
           <div>
@@ -192,22 +242,14 @@ export default function Home() {
               className="sr-only"
               type="file"
               accept=".csv,text/csv"
-              onChange={(event) => void handleFileUpload(event.target.files?.[0])}
+              onChange={handleFileInputChange}
             />
             {isReading ? "Reading..." : "Upload CSV"}
           </label>
         </header>
 
         {!parseResult && (
-          <section className="grid gap-4 border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-950">Export your logbook from UKC</h2>
-              <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
-                In UKC, open your logbook, use the export option to download it as a CSV file, then upload it here. Nothing is
-                sent anywhere; the dashboard is built from the file on this device.
-              </p>
-            </div>
-          </section>
+          <UploadPanel isReading={isReading} onFileUpload={(file) => void handleFileUpload(file)} />
         )}
 
         {parseResult && parseResult.errors.length > 0 && (
@@ -363,6 +405,41 @@ export default function Home() {
         )}
       </div>
     </main>
+  );
+}
+
+function hasDraggedFiles(event: DragEvent<HTMLElement>) {
+  return Array.from(event.dataTransfer.types).includes("Files");
+}
+
+function UploadPanel({
+  isReading,
+  onFileUpload,
+}: {
+  isReading: boolean;
+  onFileUpload: (file: File | undefined) => void;
+}) {
+  function handleFileInputChange(event: ChangeEvent<HTMLInputElement>) {
+    onFileUpload(event.target.files?.[0]);
+    event.target.value = "";
+  }
+
+  return (
+    <section className="grid gap-4 border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div>
+        <h2 className="text-xl font-semibold text-slate-950">Export your logbook from UKC</h2>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
+          In UKC, open your logbook, use the export option to download it as a CSV file, then drag it anywhere onto this page
+          or choose it below. Nothing is sent anywhere; the dashboard is built from the file on this device.
+        </p>
+      </div>
+      <div>
+        <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800">
+          <input className="sr-only" type="file" accept=".csv,text/csv" onChange={handleFileInputChange} />
+          {isReading ? "Reading..." : "Choose CSV"}
+        </label>
+      </div>
+    </section>
   );
 }
 
