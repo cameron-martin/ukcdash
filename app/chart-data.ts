@@ -63,7 +63,7 @@ export function getSuccessByGrade(rows: LogbookRow[], type: Discipline): Success
   const routes = new Map<string, Array<LogbookRow & { inputIndex: number }>>();
 
   rows.forEach((row, inputIndex) => {
-    if (row.type !== type || row.rank === null || !isFirstGoAttempt(row)) return;
+    if (row.type !== type || row.rank === null) return;
 
     const key = [row.type, row.crag.toLowerCase(), row.name.toLowerCase()].join("\u001f");
     routes.set(key, [...(routes.get(key) ?? []), { ...row, inputIndex }]);
@@ -224,10 +224,6 @@ export function getMostClimbedRoutes(rows: LogbookRow[], limit = 10): ClimbAscen
       );
     })
     .slice(0, limit);
-}
-
-function isFirstGoAttempt(row: LogbookRow) {
-  return row.isEligibleAttempt && (row.bucket === "onsight" || row.bucket === "flash" || row.bucket === "failed");
 }
 
 export function getMaxOverTime(rows: LogbookRow[], type: Discipline): MaxOverTimePoint[] {

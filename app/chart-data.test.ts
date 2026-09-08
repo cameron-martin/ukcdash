@@ -130,7 +130,7 @@ describe("getMaxOverTime", () => {
 });
 
 describe("getSuccessByGrade", () => {
-  it("calculates onsight and flash success rate by grade from first-go attempts", () => {
+  it("calculates onsight and flash success rate by grade from meaningful route outcomes", () => {
     const rows: LogbookRow[] = [
       row({ name: "Onsighted route", grade: "7a", rank: 21, bucket: "onsight" }),
       row({ name: "Flashed route", grade: "7a", rank: 21, bucket: "flash" }),
@@ -144,24 +144,45 @@ describe("getSuccessByGrade", () => {
     ]);
   });
 
-  it("excludes redpoint and repeat rows from first-go attempts", () => {
+  it("counts redpoint and repeat rows as non-onsight-flash outcomes", () => {
     const buckets: StyleBucket[] = ["redpointSent", "repeat"];
     const rows = buckets.map((bucket, index) =>
       row({ grade: "7a", rank: 21, bucket, name: `${bucket}-${index}`, isSuccessfulSend: true }),
     );
 
-    expect(getSuccessByGrade(rows, "Sport")).toEqual([]);
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, routes: 2, successes: 0, rate: 0, label: "0/2" },
+    ]);
   });
 
-  it("ignores rows from other disciplines and ineligible attempts", () => {
+  it("counts other style rows as non-onsight-flash outcomes", () => {
+    const rows = [row({ grade: "7a", rank: 21, bucket: "other", isEligibleAttempt: false })];
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, routes: 1, successes: 0, rate: 0, label: "0/1" },
+    ]);
+  });
+
+  it("counts onsight and flash rows even when they are ineligible attempts", () => {
     const rows = [
       row({ grade: "7a", rank: 21, type: "Sport", bucket: "onsight" }),
       row({ grade: "7a", rank: 21, type: "Sport", bucket: "onsight", isEligibleAttempt: false }),
+      row({ grade: "7a", rank: 21, type: "Sport", bucket: "flash", isEligibleAttempt: false }),
       row({ grade: "f6A", rank: 15, type: "Bouldering" as Discipline, bucket: "onsight" }),
     ];
 
     expect(getSuccessByGrade(rows, "Sport")).toEqual([
-      { grade: "7a", rank: 21, routes: 1, successes: 1, rate: 100, label: "1/1" },
+      { grade: "7a", rank: 21, routes: 3, successes: 3, rate: 100, label: "3/3" },
+    ]);
+  });
+
+  it("counts failed rows even when they are ineligible attempts", () => {
+    const rows = [
+      row({ grade: "7a", rank: 21, bucket: "failed", isEligibleAttempt: false, isSuccessfulSend: false }),
+    ];
+
+    expect(getSuccessByGrade(rows, "Sport")).toEqual([
+      { grade: "7a", rank: 21, routes: 1, successes: 0, rate: 0, label: "0/1" },
     ]);
   });
 
